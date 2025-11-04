@@ -9,11 +9,71 @@ from scipy import stats
 
 # Page configuration
 st.set_page_config(
-    page_title="🏏 World Cup Score Predictor",
-    page_icon="🏏",
+    page_title="� World Cup Score Predictor",
+    page_icon="�",
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# Custom CSS for better styling
+st.markdown("""
+<style>
+    .main-header {
+        background: linear-gradient(90deg, #FF6B35 0%, #F7931E 50%, #FFD23F 100%);
+        padding: 20px;
+        border-radius: 10px;
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    .metric-container {
+        display: flex;
+        justify-content: space-between;
+        gap: 15px;
+        margin: 20px 0;
+    }
+    .prediction-box {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 25px;
+        border-radius: 15px;
+        color: white;
+        text-align: center;
+        margin: 20px 0;
+    }
+    .team-vs {
+        font-size: 2rem;
+        font-weight: bold;
+        text-align: center;
+        margin: 20px 0;
+        color: #FF6B35;
+    }
+    .stSelectbox > div > div {
+        background-color: #e8f4fd !important;
+        border: 2px solid #FF6B35 !important;
+        border-radius: 8px !important;
+    }
+    .stSelectbox > div > div > div {
+        background-color: #e8f4fd !important;
+        color: #333 !important;
+    }
+    .stSelectbox label {
+        color: #FF6B35 !important;
+        font-weight: bold !important;
+    }
+    /* Additional selectbox styling */
+    div[data-testid="stSelectbox"] > div > div {
+        background: linear-gradient(135deg, #e8f4fd 0%, #d1ecf1 100%) !important;
+        border: 2px solid #FF6B35 !important;
+    }
+    div[data-testid="stSelectbox"] > div > div:hover {
+        border-color: #F7931E !important;
+        box-shadow: 0 2px 8px rgba(255, 107, 53, 0.3) !important;
+    }
+    /* Remove white from dropdown options */
+    .stSelectbox > div > div > div > div {
+        background-color: #f8f9fa !important;
+    }
+</style>
+""", unsafe_allow_html=True)
 
 # Load the improved trained model
 @st.cache_resource
@@ -50,8 +110,8 @@ def load_data():
             st.error("No data files found! Please run the data processing notebook first.")
             return None
 
-def predict_with_constraints(model, input_data):
-    """Make predictions with logical constraints"""
+def predict_with_constraints(model, input_data, match_type="T20"):
+    """Make predictions with logical constraints based on match format"""
     raw_prediction = model.predict(input_data)[0]
     
     current_score = input_data['current_score'].iloc[0]
@@ -61,29 +121,152 @@ def predict_with_constraints(model, input_data):
     # Constraint 1: Final score must be >= current score
     constrained_prediction = max(raw_prediction, current_score)
     
-    # Constraint 2: Maximum possible runs in remaining balls
-    max_possible_rr = 18  # Maximum realistic run rate per over
+    # Constraint 2: Maximum possible runs based on match format
+    if match_type == "T20":
+        max_possible_rr = 18  # Aggressive T20 run rate
+        typical_final_score_range = (120, 220)
+    elif match_type == "ODI":
+        max_possible_rr = 12  # More conservative ODI run rate
+        typical_final_score_range = (200, 400)
+    else:  # Test
+        max_possible_rr = 6   # Conservative Test run rate
+        typical_final_score_range = (250, 600)
+    
     max_possible_runs = current_score + (balls_left / 6) * max_possible_rr
     constrained_prediction = min(constrained_prediction, max_possible_runs)
     
-    # Constraint 3: Adjust for wickets left (fewer wickets = lower scoring potential)
-    if wickets_left <= 3:
-        # Reduce prediction by 5% for each wicket below 4
-        reduction_factor = 1 - (0.05 * (4 - wickets_left))
+    # Constraint 3: Adjust for wickets left based on match format
+    if match_type == "T20" and wickets_left <= 3:
+        # T20: More aggressive, less wicket penalty
+        reduction_factor = 1 - (0.03 * (4 - wickets_left))
+        wicket_adjusted = current_score + (constrained_prediction - current_score) * reduction_factor
+        constrained_prediction = min(constrained_prediction, wicket_adjusted)
+    elif match_type == "ODI" and wickets_left <= 4:
+        # ODI: Moderate wicket penalty
+        reduction_factor = 1 - (0.05 * (5 - wickets_left))
+        wicket_adjusted = current_score + (constrained_prediction - current_score) * reduction_factor
+        constrained_prediction = min(constrained_prediction, wicket_adjusted)
+    elif match_type == "Test" and wickets_left <= 5:
+        # Test: Higher wicket penalty, more conservative
+        reduction_factor = 1 - (0.08 * (6 - wickets_left))
         wicket_adjusted = current_score + (constrained_prediction - current_score) * reduction_factor
         constrained_prediction = min(constrained_prediction, wicket_adjusted)
     
+    # Constraint 4: Keep within typical score ranges for format
+    min_score, max_score = typical_final_score_range
+    if constrained_prediction < min_score and balls_left > 30:  # Only if significant overs left
+        constrained_prediction = max(constrained_prediction, min_score * 0.8)
+    if constrained_prediction > max_score:
+        constrained_prediction = min(constrained_prediction, max_score)
+    
     return constrained_prediction, raw_prediction
 
-def calculate_win_probability(batting_team_score, bowling_team, batting_team, city, raw_data=None):
+def create_run_rate_chart(current_score, predicted_score, overs_completed, batting_team, match_type="T20"):
+    """Create an interactive run rate progression chart"""
+    
+    # Set total overs based on match format
+    if match_type == "T20":
+        total_overs = 20
+    elif match_type == "ODI":
+        total_overs = 50
+    else:  # Test
+        total_overs = 90  # Typical day's play
+    
+    # Calculate current and required run rates
+    current_rr = current_score / overs_completed if overs_completed > 0 else 0
+    overs_left = total_overs - overs_completed
+    required_rr = (predicted_score - current_score) / overs_left if overs_left > 0 else 0
+    
+    # Create sample progression data
+    overs = list(range(0, total_overs + 1))
+    current_progression = []
+    projected_progression = []
+    
+    for over in overs:
+        if over <= overs_completed:
+            # Use actual progression (simplified)
+            current_progression.append(current_score * (over / overs_completed) if overs_completed > 0 else 0)
+            projected_progression.append(current_score * (over / overs_completed) if overs_completed > 0 else 0)
+        else:
+            # Project future scores
+            current_progression.append(current_score)
+            remaining_overs = over - overs_completed
+            additional_runs = remaining_overs * required_rr
+            projected_progression.append(current_score + additional_runs)
+    
+    fig = go.Figure()
+    
+    # Current score line
+    fig.add_trace(go.Scatter(
+        x=overs[:int(overs_completed)+1],
+        y=current_progression[:int(overs_completed)+1],
+        mode='lines+markers',
+        name='Current Progression',
+        line=dict(color='blue', width=3),
+        marker=dict(size=6)
+    ))
+    
+    # Projected score line
+    if overs_left > 0:
+        fig.add_trace(go.Scatter(
+            x=overs[int(overs_completed):],
+            y=projected_progression[int(overs_completed):],
+            mode='lines+markers',
+            name='Projected Progression',
+            line=dict(color='orange', width=3, dash='dash'),
+            marker=dict(size=6)
+        ))
+    
+    # Target score line (horizontal)
+    fig.add_hline(
+        y=predicted_score,
+        line_dash="dot",
+        line_color="red",
+        annotation_text=f"Predicted Final: {predicted_score:.0f}"
+    )
+    
+    fig.update_layout(
+        title=f"{batting_team} Score Progression",
+        xaxis_title="Overs",
+        yaxis_title="Runs",
+        height=400,
+        showlegend=True
+    )
+    
+    return fig
+
+def calculate_win_probability(batting_team_score, bowling_team, batting_team, city, match_type="T20", raw_data=None):
     """Calculate win probability based on predicted score and historical data"""
     
-    # Team strength ratings based on historical performance (you can enhance this with more data)
-    team_ratings = {
-        'India': 85, 'Australia': 82, 'England': 80, 'New Zealand': 78,
-        'South Africa': 75, 'Pakistan': 73, 'West Indies': 70, 'Sri Lanka': 68,
-        'Bangladesh': 65, 'Afghanistan': 62, 'Ireland': 58, 'Netherlands': 55
+    # Team strength ratings based on historical performance and match format
+    # T20 ratings (more aggressive teams get bonus)
+    t20_ratings = {
+        'India': 85, 'Australia': 82, 'England': 84, 'New Zealand': 78,
+        'South Africa': 75, 'Pakistan': 76, 'West Indies': 73, 'Sri Lanka': 68,
+        'Bangladesh': 65, 'Afghanistan': 70, 'Ireland': 58, 'Netherlands': 55
     }
+    
+    # ODI ratings (balanced teams get advantage)
+    odi_ratings = {
+        'India': 87, 'Australia': 85, 'England': 82, 'New Zealand': 80,
+        'South Africa': 77, 'Pakistan': 73, 'West Indies': 68, 'Sri Lanka': 70,
+        'Bangladesh': 67, 'Afghanistan': 65, 'Ireland': 60, 'Netherlands': 55
+    }
+    
+    # Test ratings (traditional strong teams get bonus)
+    test_ratings = {
+        'India': 88, 'Australia': 87, 'England': 80, 'New Zealand': 82,
+        'South Africa': 78, 'Pakistan': 74, 'West Indies': 65, 'Sri Lanka': 72,
+        'Bangladesh': 63, 'Afghanistan': 55, 'Ireland': 50, 'Netherlands': 45
+    }
+    
+    # Select ratings based on match format
+    if match_type == "T20":
+        team_ratings = t20_ratings
+    elif match_type == "ODI":
+        team_ratings = odi_ratings
+    else:  # Test
+        team_ratings = test_ratings
     
     # Venue advantage (some teams perform better at certain venues)
     venue_advantage = {
@@ -159,9 +342,13 @@ def get_match_prediction_summary(batting_team, bowling_team, predicted_score, wi
     return outlook, color, score_assessment
 
 def main():
-    # App title with cricket emoji and styling
-    st.title("🏏 Cricket World Cup Score Predictor")
-    st.markdown("---")
+    # App title with enhanced styling
+    st.markdown("""
+    <div class="main-header">
+        <h1>🏆 World Cup Cricket Score Predictor</h1>
+        <p style="font-size: 1.2rem; margin: 10px 0;">AI-Powered Real-Time Match Analysis & Predictions</p>
+    </div>
+    """, unsafe_allow_html=True)
     
     # Load model and data
     model_result = load_model()
@@ -218,20 +405,54 @@ def prediction_page(model_info):
     
     with col1:
         st.subheader("🏏 Match Setup")
+        
+        # Match type selection
+        match_type = st.selectbox(
+            "Match Format:", 
+            ["T20", "ODI", "Test"], 
+            index=0,
+            help="Select the format of the match"
+        )
+        
         batting_team = st.selectbox("Batting Team:", teams, index=7)  # Default to India
         bowling_team = st.selectbox("Bowling Team:", [team for team in teams if team != batting_team])
         city = st.selectbox("City/Venue:", cities, index=0)  # Default to Kolkata
         
     with col2:
         st.subheader("📊 Current Match State")
-        current_score = st.number_input("Current Score:", min_value=0, max_value=400, value=100)
+        
+        # Dynamic match parameters based on format
+        if match_type == "T20":
+            max_overs = 20
+            max_score = 400
+            default_score = 100
+            default_overs = 10.0
+        elif match_type == "ODI":
+            max_overs = 50
+            max_score = 500
+            default_score = 200
+            default_overs = 25.0
+        else:  # Test
+            max_overs = 90  # Typical day's play
+            max_score = 600
+            default_score = 250
+            default_overs = 45.0
+        
+        current_score = st.number_input("Current Score:", min_value=0, max_value=max_score, value=default_score)
         wickets_lost = st.slider("Wickets Lost:", 0, 10, 3)
         wickets_left = 10 - wickets_lost
         
-        # Calculate balls left based on overs
-        overs_completed = st.number_input("Overs Completed:", min_value=0.0, max_value=19.5, value=10.0, step=0.1)
+        # Calculate balls left based on overs and match type
+        overs_completed = st.number_input(
+            "Overs Completed:", 
+            min_value=0.0, 
+            max_value=max_overs-0.1, 
+            value=default_overs, 
+            step=0.1
+        )
         balls_completed = int(overs_completed * 6)
-        balls_left = 120 - balls_completed  # T20 = 120 balls
+        total_balls = max_overs * 6
+        balls_left = total_balls - balls_completed
         
         # Calculate current run rate
         if overs_completed > 0:
@@ -261,16 +482,16 @@ def prediction_page(model_info):
         })
         
         try:
-            # Make prediction with constraints
+            # Make prediction with constraints based on match format
             if model_type == "improved":
-                predicted_score, raw_prediction = predict_with_constraints(model, input_data)
+                predicted_score, raw_prediction = predict_with_constraints(model, input_data, match_type)
             else:
                 raw_prediction = model.predict(input_data)[0]
                 predicted_score = raw_prediction
             
-            # Calculate win probability
+            # Calculate win probability based on match format
             win_probability = calculate_win_probability(
-                predicted_score, bowling_team, batting_team, city
+                predicted_score, bowling_team, batting_team, city, match_type=match_type
             )
             
             # Get match prediction summary
@@ -278,38 +499,111 @@ def prediction_page(model_info):
                 batting_team, bowling_team, predicted_score, win_probability
             )
             
-            # Display results with styling
+            # Display results with enhanced styling
             st.markdown("---")
-            st.subheader("🏆 Match Prediction Results")
             
-            # Main metrics row
+            # Team vs Team header
+            st.markdown(f"""
+            <div class="team-vs">
+                {batting_team} 🆚 {bowling_team}
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Predicted score in large box with match format
+            st.markdown(f"""
+            <div class="prediction-box">
+                <h2>🎯 PREDICTED {match_type} FINAL SCORE</h2>
+                <h1 style="font-size: 4rem; margin: 10px 0;">{predicted_score:.0f}</h1>
+                <p style="font-size: 1.2rem;">Expected total runs for {batting_team} in {match_type} format</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Main metrics row with enhanced styling
             col1, col2, col3, col4 = st.columns(4)
-            with col1:
-                st.metric("🎯 Predicted Final Score", f"{predicted_score:.0f}")
-            with col2:
-                runs_needed = max(0, predicted_score - current_score)
-                st.metric("🏃‍♂️ Runs Needed", f"{runs_needed:.0f}")
-            with col3:
-                required_rr = (predicted_score - current_score) / (balls_left / 6) if balls_left > 0 else 0
-                st.metric("📈 Required Run Rate", f"{required_rr:.2f}")
-            with col4:
-                st.metric("🏏 Win Probability", f"{win_probability:.1%}")
+            runs_needed = max(0, predicted_score - current_score)
+            required_rr = (predicted_score - current_score) / (balls_left / 6) if balls_left > 0 else 0
             
-            # Win probability visualization
+            with col1:
+                st.markdown(f"""
+                <div style="background: linear-gradient(135deg, #FF6B35, #F7931E); padding: 20px; border-radius: 15px; text-align: center; color: white; margin: 10px 0; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+                    <h3 style="margin: 0; font-size: 1rem;">🏃‍♂️ Runs Needed</h3>
+                    <h2 style="margin: 10px 0; font-size: 2.5rem; font-weight: bold;">{runs_needed:.0f}</h2>
+                </div>
+                """, unsafe_allow_html=True)
+                
+            with col2:
+                st.markdown(f"""
+                <div style="background: linear-gradient(135deg, #4CAF50, #45a049); padding: 20px; border-radius: 15px; text-align: center; color: white; margin: 10px 0; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+                    <h3 style="margin: 0; font-size: 1rem;">📈 Required RR</h3>
+                    <h2 style="margin: 10px 0; font-size: 2.5rem; font-weight: bold;">{required_rr:.2f}</h2>
+                </div>
+                """, unsafe_allow_html=True)
+                
+            with col3:
+                st.markdown(f"""
+                <div style="background: linear-gradient(135deg, #2196F3, #1976D2); padding: 20px; border-radius: 15px; text-align: center; color: white; margin: 10px 0; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+                    <h3 style="margin: 0; font-size: 1rem;">🏏 Win Probability</h3>
+                    <h2 style="margin: 10px 0; font-size: 2.5rem; font-weight: bold;">{win_probability:.1%}</h2>
+                </div>
+                """, unsafe_allow_html=True)
+                
+            with col4:
+                st.markdown(f"""
+                <div style="background: linear-gradient(135deg, #9C27B0, #7B1FA2); padding: 20px; border-radius: 15px; text-align: center; color: white; margin: 10px 0; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+                    <h3 style="margin: 0; font-size: 1rem;">⏰ Overs Left</h3>
+                    <h2 style="margin: 10px 0; font-size: 2.5rem; font-weight: bold;">{balls_left/6:.1f}</h2>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            # Win probability visualization with interactive chart
             st.markdown("### 🎯 Match Outcome Prediction")
             
-            # Create a visual win probability bar
+            # Create interactive win probability gauge
+            fig = go.Figure(go.Indicator(
+                mode = "gauge+number+delta",
+                value = win_probability * 100,
+                domain = {'x': [0, 1], 'y': [0, 1]},
+                title = {'text': f"{batting_team} Win Probability"},
+                delta = {'reference': 50, 'increasing': {'color': "green"}, 'decreasing': {'color': "red"}},
+                gauge = {
+                    'axis': {'range': [None, 100]},
+                    'bar': {'color': "darkblue"},
+                    'steps': [
+                        {'range': [0, 25], 'color': "lightgray"},
+                        {'range': [25, 50], 'color': "gray"},
+                        {'range': [50, 75], 'color': "lightgreen"},
+                        {'range': [75, 100], 'color': "green"}
+                    ],
+                    'threshold': {
+                        'line': {'color': "red", 'width': 4},
+                        'thickness': 0.75,
+                        'value': 90
+                    }
+                }
+            ))
+            fig.update_layout(height=300)
+            st.plotly_chart(fig, use_container_width=True)
+            
+            # Side by side team comparison
             col_a, col_b = st.columns(2)
             
             with col_a:
-                st.markdown(f"**{batting_team}**")
-                st.progress(win_probability)
-                st.write(f"{win_probability:.1%} chance to win")
+                st.markdown(f"""
+                <div style="background: linear-gradient(135deg, #4CAF50, #45a049); padding: 20px; border-radius: 10px; text-align: center; color: white;">
+                    <h3>{batting_team}</h3>
+                    <h2>{win_probability:.1%}</h2>
+                    <p>Win Chance</p>
+                </div>
+                """, unsafe_allow_html=True)
             
             with col_b:
-                st.markdown(f"**{bowling_team}**")
-                st.progress(1 - win_probability)
-                st.write(f"{(1-win_probability):.1%} chance to win")
+                st.markdown(f"""
+                <div style="background: linear-gradient(135deg, #f44336, #d32f2f); padding: 20px; border-radius: 10px; text-align: center; color: white;">
+                    <h3>{bowling_team}</h3>
+                    <h2>{(1-win_probability):.1%}</h2>
+                    <p>Win Chance</p>
+                </div>
+                """, unsafe_allow_html=True)
             
             # Match outlook
             if outlook_color == "success":
@@ -341,6 +635,11 @@ def prediction_page(model_info):
             progress = min(1.0, predicted_score / 200)  # Assuming 200 as a good T20 score
             st.progress(progress, text=f"Score Progress ({predicted_score:.0f}/200)")
             
+            # Run Rate Progression Chart
+            st.markdown("### 📊 Score Progression Analysis")
+            run_rate_fig = create_run_rate_chart(current_score, predicted_score, overs_completed, batting_team, match_type)
+            st.plotly_chart(run_rate_fig, use_container_width=True)
+            
             # Additional insights
             st.markdown("### 💡 Detailed Match Analysis")
             
@@ -350,14 +649,34 @@ def prediction_page(model_info):
                 st.markdown("**📊 Score Analysis**")
                 st.write(score_assessment)
                 
-                if predicted_score > 180:
-                    st.success("🔥 Excellent batting display expected")
-                elif predicted_score > 160:
-                    st.info("📈 Competitive total on the cards")
-                elif predicted_score > 140:
-                    st.warning("⚠️ Batting team needs acceleration")
-                else:
-                    st.error("� Bowling team in command")
+                # Format-specific score assessment
+                if match_type == "T20":
+                    if predicted_score > 180:
+                        st.success("🔥 Excellent T20 batting display expected")
+                    elif predicted_score > 160:
+                        st.info("📈 Competitive T20 total on the cards")
+                    elif predicted_score > 140:
+                        st.warning("⚠️ Below-par T20 score, batting team needs acceleration")
+                    else:
+                        st.error("📉 Poor T20 total, bowling team in command")
+                elif match_type == "ODI":
+                    if predicted_score > 320:
+                        st.success("🔥 Excellent ODI batting display expected")
+                    elif predicted_score > 280:
+                        st.info("📈 Competitive ODI total on the cards")
+                    elif predicted_score > 240:
+                        st.warning("⚠️ Below-average ODI score, needs improvement")
+                    else:
+                        st.error("📉 Poor ODI total, bowling team in command")
+                else:  # Test
+                    if predicted_score > 400:
+                        st.success("🔥 Excellent Test innings expected")
+                    elif predicted_score > 300:
+                        st.info("📈 Good Test total on the cards")
+                    elif predicted_score > 250:
+                        st.warning("⚠️ Average Test score, could be better")
+                    else:
+                        st.error("📉 Below-par Test innings, bowling dominating")
             
             with col2:
                 st.markdown("**🏏 Key Factors**")
