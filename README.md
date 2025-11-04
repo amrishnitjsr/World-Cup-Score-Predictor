@@ -54,21 +54,39 @@ This project represents a complete end-to-end machine learning solution for cric
 
 ## 🖼️ Screenshots
 
-### Dashboard Overview
-![Dashboard Overview](assets/dashboard-overview.png)
-*Main dashboard with gradient header and navigation menu*
+### Dashboard Input Form
+![Dashboard Input Form](assets/dashboard-input-form.png)
+*Interactive input form showing team selection, venue dropdown, match state inputs, and recent performance tracking*
 
 ### Score Prediction Results
-![Prediction Display](assets/prediction-display.png)
-*T20 score prediction with detailed metrics and format-specific analysis*
+![Prediction Results](assets/prediction-results.png)
+*T20 match prediction showing India vs England with 184 predicted runs and colorful metric cards displaying key statistics*
 
-### Match Outcome Analysis
-![Match Outcome](assets/match-outcome.png)
-*Interactive win probability gauge and team comparison visualizations*
+### Win Probability Analysis
+![Win Probability Gauge](assets/win-probability-gauge.png)
+*Interactive win probability gauge showing India's 71.7% win chance with team comparison cards and match outlook*
 
-### Match Setup Interface
-![Match Setup](assets/match-setup.png)
-*User-friendly input form with match format selection and real-time calculations*
+## 🎯 Live Dashboard Features
+
+### Real-Time Match Analysis
+- **Format Selection**: T20, ODI, and Test cricket support
+- **Team Selection**: 12+ international cricket teams
+- **Venue Database**: 35+ cricket stadiums worldwide
+- **Live Calculations**: Instant updates of run rates and requirements
+
+### Interactive Visualizations
+- **Win Probability Gauge**: Semi-circular gauge with color-coded probability
+- **Metric Cards**: Gradient-colored cards showing:
+  - 🏃‍♂️ **Runs Needed**: 84 (Orange gradient)
+  - 📈 **Required RR**: 8.36 (Green gradient) 
+  - 🏏 **Win Probability**: 71.7% (Blue gradient)
+  - ⏰ **Overs Left**: 10.0 (Purple gradient)
+
+### Smart Predictions
+- **AI-Powered**: XGBoost model with 98.71% accuracy
+- **Constraint Logic**: Realistic score boundaries and wicket adjustments
+- **Format-Aware**: Different algorithms for T20/ODI/Test matches
+- **Confidence Indicators**: High/Medium/Low confidence levels
 
 ## 🚀 Quick Start
 
@@ -126,7 +144,26 @@ Choose from three cricket formats:
 
 ## 🎯 Prediction Examples
 
-### T20 Match Example
+### Live Dashboard Example (India vs England)
+```
+Match Format: T20
+Teams: India vs England
+Venue: Kolkata
+Current Score: 100/5 in 10.0 overs
+Last 5 Overs: 50 runs
+Predicted Final Score: 184 runs
+
+Key Metrics:
+🏃‍♂️ Runs Needed: 84
+📈 Required RR: 8.36
+🏏 Win Probability: India 71.7%
+⏰ Overs Left: 10.0
+
+Match Outlook: India favored (Competitive T20 total)
+Prediction Confidence: High
+```
+
+### Additional T20 Example
 ```
 Match: India vs Australia (Melbourne)
 Current: 115/5 in 10 overs
