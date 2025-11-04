@@ -52,19 +52,45 @@ This project represents a complete end-to-end machine learning solution for cric
 - **🌍 World Cup Focus**: Trained specifically on international cricket data
 - **📱 Responsive Design**: Works seamlessly on desktop, tablet, and mobile devices
 
-## 🖼️ Screenshots
+## 🖼️ Dashboard Preview
 
-### Dashboard Input Form
-![Dashboard Input Form](assets/dashboard-input-form.png)
-*Interactive input form showing team selection, venue dropdown, match state inputs, and recent performance tracking*
+### 🎨 Beautiful Interactive Interface
 
-### Score Prediction Results
-![Prediction Results](assets/prediction-results.png)
-*T20 match prediction showing India vs England with 184 predicted runs and colorful metric cards displaying key statistics*
+The cricket score predictor features a modern, professional dashboard with:
 
-### Win Probability Analysis
-![Win Probability Gauge](assets/win-probability-gauge.png)
-*Interactive win probability gauge showing India's 71.7% win chance with team comparison cards and match outlook*
+**🏏 Input Form Features:**
+- Elegant team selection dropdowns (India vs England example)
+- Venue selection from 35+ international cricket stadiums  
+- Real-time match state tracking (score, wickets, overs)
+- Recent performance analysis (runs in last 5 overs)
+
+**📊 Prediction Results Display:**
+- Large gradient prediction box showing final score (e.g., "184 runs")
+- Four colorful metric cards with key statistics:
+  - 🟠 **Runs Needed**: 84 (Orange gradient)
+  - 🟢 **Required RR**: 8.36 (Green gradient)  
+  - 🔵 **Win Probability**: 71.7% (Blue gradient)
+  - 🟣 **Overs Left**: 10.0 (Purple gradient)
+
+**⚡ Interactive Visualizations:**
+- Semi-circular win probability gauge with color coding
+- Side-by-side team comparison cards  
+- Match outlook indicators ("India favored")
+- Prediction confidence levels (High/Medium/Low)
+
+### 📱 Modern UI Features
+- **Responsive Design**: Works perfectly on desktop, tablet, and mobile
+- **Gradient Themes**: Professional orange-to-yellow color schemes
+- **Interactive Elements**: Hover effects and smooth animations
+- **Real-time Updates**: Instant calculations as you modify inputs
+
+> **📸 Add Your Own Screenshots**
+> 
+> To display screenshots of your running dashboard:
+> 1. Take screenshots of your dashboard in action
+> 2. Save them as `.png` files in the `assets/` folder  
+> 3. Update the image references in this README
+> 4. Your beautiful dashboard will be showcased to visitors!
 
 ## 🎯 Live Dashboard Features
 
