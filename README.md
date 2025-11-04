@@ -52,7 +52,23 @@ This project represents a complete end-to-end machine learning solution for cric
 - **🌍 World Cup Focus**: Trained specifically on international cricket data
 - **📱 Responsive Design**: Works seamlessly on desktop, tablet, and mobile devices
 
-## 🖼️ Dashboard Preview
+## 🖼️ Dashboard Screenshots
+
+### Dashboard Overview
+![Dashboard Overview](<assets/Screenshot 2025-11-05 045601.png>)
+*Main dashboard with header, navigation and overall layout.*
+
+### Dashboard Input Interface
+![Dashboard Input](<assets/Screenshot 2025-11-05 044408.png>)
+*Elegant input form showing team selection (India vs England), venue (Kolkata), match state, and recent performance tracking.*
+
+### Score Prediction Results
+![Prediction Results](<assets/Screenshot 2025-11-05 044423.png>)
+*T20 prediction showing 184 runs with gradient cards — Runs Needed: 84, Required RR: 8.36, Win Probability: 71.7%, Overs Left: 10.0.*
+
+### Win Probability Analysis
+![Win Probability](<assets/Screenshot 2025-11-05 044454.png>)
+*Interactive gauge showing India's 71.7% win chance with side-by-side team comparison cards and match outlook.*
 
 ### 🎨 Beautiful Interactive Interface
 
