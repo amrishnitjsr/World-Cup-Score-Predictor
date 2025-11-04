@@ -12,6 +12,7 @@
 Replace the text descriptions with actual image links like:
 
 ```markdown
+<!-- Example when you have real image files: -->
 ![Dashboard Screenshot](assets/dashboard-preview-1.png)
 *Beautiful cricket prediction interface*
 ```

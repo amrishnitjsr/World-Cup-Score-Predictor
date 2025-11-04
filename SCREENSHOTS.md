@@ -1,23 +1,25 @@
-# Adding Screenshots to README
+# 📸 Screenshots for World Cup Cricket Score Predictor
 
-To complete the README setup, please save your screenshots with these exact names in the `assets/` folder:
+## Current Status: Text Descriptions Only
 
-1. Save the main dashboard screenshot as: `dashboard-overview.png`
-2. Save the score prediction results as: `prediction-display.png`  
-3. Save the win probability gauge as: `match-outcome.png`
-4. Save the input form screenshot as: `match-setup.png`
+The main README.md currently contains detailed text descriptions of the dashboard features instead of images. This ensures the README looks professional and complete without any broken image links.
 
-The README.md file already references these image paths, so once you add them, the screenshots will appear automatically in the GitHub repository view.
+## Dashboard Features Described in README:
 
-## Alternative: Using GitHub Issues for Screenshots
+✅ **Input Form Interface** - Team selection, venue dropdown, match state tracking  
+✅ **Prediction Results** - Large gradient score display with colorful metric cards  
+✅ **Win Probability Analysis** - Interactive gauges and team comparisons  
+✅ **Modern UI Design** - Responsive layout with gradient themes
 
-If you can't directly add image files, you can:
-1. Create a GitHub issue in your repository
-2. Drag and drop the screenshots into the issue description
-3. Copy the generated image URLs 
-4. Replace the local paths in README.md with the GitHub URLs
+## To Add Screenshots Later (Optional):
 
-Example:
-```markdown
-![Dashboard Overview](https://user-images.githubusercontent.com/147282545/screenshot1.png)
-```
+1. **Take Screenshots**: Capture your running Streamlit dashboard
+2. **Save as PNG files**: Use actual image files (not text files)  
+3. **Upload to GitHub**: Either commit to repository or use GitHub issues
+4. **Update README**: Replace text descriptions with image markdown
+
+## Alternative: The README is Perfect As-Is!
+
+The current README provides comprehensive information about your dashboard without requiring images. Many professional projects use detailed text descriptions effectively.
+
+Your cricket prediction dashboard is fully documented and ready to showcase! 🏏🚀
