@@ -54,6 +54,10 @@ This project represents a complete end-to-end machine learning solution for cric
 
 ## 🖼️ Dashboard Screenshots
 
+### Main Dashboard Interface
+![Main Dashboard](assets/main.png)
+*Complete dashboard overview showing the main interface with navigation, input forms, and overall layout of the World Cup Cricket Score Predictor application.*
+
 ### Score Prediction Results
 ![Prediction Results](assets/prediction-results.png)
 *Complete T20 prediction interface showing India vs England with 184 predicted runs, colorful gradient metric cards (Runs Needed: 84, Required RR: 8.36, Win Probability: 71.7%, Overs Left: 10.0), and professional dashboard design.*
